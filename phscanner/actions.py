@@ -1,14 +1,16 @@
-"""This module contains the DownloadThread class which creates the
-thread used to manage the download of the selected video without hanging
-the main interface.
+"""
+This module contains the DownloadThread class which creates the thread
+used to manage the download of the selected video without hanging the
+main interface.
 """
 
 import urllib.request
 from PyQt4.QtCore import pyqtSignal, QObject, pyqtSlot
 
 
-class Downloader(QObject):
-    """A class to create a 'downloader' object meant to be run in a
+class Download(QObject):
+    """
+    A class to create a 'downloader' object meant to be run in a
     separate QThread. The entry point is the 'start_process' method. The
     class also contains two signals:
 
@@ -25,7 +27,8 @@ class Downloader(QObject):
         self.exiting = False
 
     def _report(self, blocknum, blocksize, totalsize):
-        """Report hook for the download, emits a signal with downloaded
+        """
+        Report hook for the download, emits a signal with downloaded
         percentage value.
         """
         readsofar = blocknum * blocksize

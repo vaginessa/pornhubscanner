@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""PornHubScanner is a small program made to  let you watch porn videos
+"""
+PornHubScanner is a small program made to  let you watch porn videos
 in a safe and privacy friendly manner. No more cookies, no more
 embarassing browser cache problems, plus no need for flashplayer. The
 script relies on qt4 for the gui and on BeautifulSoup library for the
@@ -16,7 +17,7 @@ from PyQt4.QtCore import QThread, pyqtSlot
 
 from phscanner.gui import Ui_MainWindow
 from phscanner.site import PornHub
-from phscanner.downloader import Downloader
+from phscanner.actions import Download
 
 
 class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
@@ -65,31 +66,40 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.lineEdit.setText('Cannot retrieve video url, sorry!')
         else:
             if self.actionBox.currentText() == 'Play mode':
-                try:
-                    self.lineEdit.setText('Launching player ...')
-                    subprocess.Popen(['/usr/bin/vlc', '--play-and-exit', url])
-                except FileNotFoundError:
-                    self.lineEdit.setText('Vlc not found, cmon really?!')
-                except TypeError:
-                    self.lineEdit.setText('Please try again!')
-
+                players = ['/usr/bin/ivlc', '/usr/bin/totem']
+                for i in players:
+                    try:
+                        subprocess.Popen([i, url])
+                    except FileNotFoundError:
+                        if i == players[-1]:
+                            self.lineEdit.setText('No player found!')
+                            break
+                    except TypeError:
+                        self.lineEdit.setText('Please try again!')
+                    else:
+                        self.lineEdit.setText('Launching {0}...'.format(i))
+                        break
             else:
-                # selected action is 'Download'
-                # create an instance of worker and move it to dlthread
+                # selected action is 'Download' create an instance of
+                # worker and move it to dlthread
                 self.dlthread = QThread()
-                self.downloader = Downloader(url, selected)
+                self.downloader = Download(url, selected)
                 self.downloader.moveToThread(self.dlthread)
 
                 # connect signals
                 self.dlthread.started.connect(self.downloader.start_process)
                 self.dlthread.finished.connect(self.download_done)
+
                 self.downloader.finished.connect(self.dlthread.quit)
                 self.downloader.reportInfo.connect(self.update_progress)
+
                 self.abortButton.clicked.connect(self.download_done)
                 self.lineEdit.setText('Downloading ...')
                 self.progressBar.show()
                 self.abortButton.show()
                 self.videoList.setDisabled(True)
+
+                # Start the job
                 self.dlthread.start()
 
     @pyqtSlot(int)
