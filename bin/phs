@@ -13,16 +13,48 @@ import urllib.request
 import subprocess
 
 from PyQt4 import QtGui
-from PyQt4.QtCore import QThread, pyqtSlot
+from PyQt4.QtCore import QThread
 
-from phscanner.gui import Ui_MainWindow
+from phscanner.interfaces import error_dialog, downloader, main
 from phscanner.site import PornHub
 from phscanner.actions import Download
 
 
-class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
-    """Class to manage the behaviour of the main window."""
+def get_coordinates(width, height):
+    """Provides the x and y coordinates to center the widget."""
+    desk = QtGui.QApplication.desktop()
+    return (desk.width() - width) / 2, (desk.height() - height) / 2
 
+
+class DialogWindow(QtGui.QDialog, error_dialog.Ui_Dialog):
+    """Class to manage popup dialog."""
+    def __init__(self, message):
+        super().__init__()
+        self.setupUi(self)
+        self.label.setText(message)
+        x, y = get_coordinates(self.width(), self.height())
+        self.setGeometry(x, y, self.width(), self.height())
+
+
+class DownloaderWindow(QtGui.QWidget, downloader.Ui_Download):
+    """Class to manage the downloader window."""
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        x, y = get_coordinates(self.width(), self.height())
+        self.setGeometry(x, y, self.width(), self.height())
+
+    def update_progress(self, percentage):
+        """Update progressbar with the received value."""
+        self.progressBar.setValue(percentage)
+
+    def closeEvent(self, event):
+        # If windows is closed, simulate a click of the abortButton.
+        self.abortButton.click()
+
+
+class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
+    """Class to manage the behaviour of the main window."""
     def __init__(self, parent=None):
         super().__init__()
         self.setupUi(self)
@@ -31,15 +63,14 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.dlthread = None
         self.downloader = None
 
-        # interface setup
-        self.progressBar.hide()
-        self.abortButton.hide()
+        # Center the window
+        x, y = get_coordinates(self.width(), self.height())
+        self.setGeometry(x, y, self.width(), self.height())
 
-        # connect signals to methods
+        # Connect signals to methods
         self.scanButton.clicked.connect(self.scan)
         self.videoList.itemDoubleClicked.connect(self.action)
 
-    @pyqtSlot()
     def scan(self):
         """Store titles and addresses in a key-value format."""
         self.catalogue.clear()
@@ -52,7 +83,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         else:
             self.videoList.addItems(list(self.catalogue.keys()))
 
-    @pyqtSlot(str)
     def action(self, selected_item):
         """Manage the selected action for the video."""
         selected = selected_item.text()
@@ -60,68 +90,65 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         try:
             url = self.site.get_video_url(self.catalogue[selected])
         except (urllib.error.HTTPError, urllib.error.URLError):
-            self.lineEdit.setText('Cannot reach video page, sorry!')
+            print('Cannot reach video page, sorry!')
         except (AttributeError, KeyError):
-            print(url)
-            self.lineEdit.setText('Cannot retrieve video url, sorry!')
+            print('Cannot retrieve video url, sorry!')
         else:
             if self.actionBox.currentText() == 'Play mode':
-                players = ['/usr/bin/ivlc', '/usr/bin/totem']
+                players = ['/usr/bin/vlc', '/usr/bin/totem']
                 for i in players:
                     try:
                         subprocess.Popen([i, url])
                     except FileNotFoundError:
                         if i == players[-1]:
-                            self.lineEdit.setText('No player found!')
+                            msg = 'Cannot find a supported player!'
+                            self.d = DialogWindow(msg)
+                            self.d.show()
                             break
                     except TypeError:
-                        self.lineEdit.setText('Please try again!')
+                        pass
                     else:
-                        self.lineEdit.setText('Launching {0}...'.format(i))
                         break
             else:
-                # selected action is 'Download' create an instance of
-                # worker and move it to dlthread
+                # Selected action is 'Download'. We create a separate
+                # QThread instance and a downloader instance, than we
+                # move the latter to the first
                 self.dlthread = QThread()
-                self.downloader = Download(url, selected)
-                self.downloader.moveToThread(self.dlthread)
+                self.dlproc = Download(url, selected)
+                self.dlproc.moveToThread(self.dlthread)
 
                 # connect signals
-                self.dlthread.started.connect(self.downloader.start_process)
+                self.dlthread.started.connect(self.dlproc.start_process)
                 self.dlthread.finished.connect(self.download_done)
+                self.dlproc.finished.connect(self.dlthread.quit)
 
-                self.downloader.finished.connect(self.dlthread.quit)
-                self.downloader.reportInfo.connect(self.update_progress)
+                # Create and manage an instance of the DownloaderWindow
+                self.dw = DownloaderWindow()
+                self.dlproc.report.connect(self.dw.update_progress)
+                self.dw.abortButton.clicked.connect(self.download_done)
 
-                self.abortButton.clicked.connect(self.download_done)
-                self.lineEdit.setText('Downloading ...')
-                self.progressBar.show()
-                self.abortButton.show()
+                # Disable the video list while an action is performing
                 self.videoList.setDisabled(True)
 
                 # Start the job
-                self.dlthread.start()
+                try:
+                    self.dlthread.start()
+                except:
+                    print('ff')
+                else:
+                    self.dw.show()
 
-    @pyqtSlot(int)
-    def update_progress(self, percentage):
-        """Update progressbar with the received value."""
-        self.progressBar.setValue(percentage)
-
-    @pyqtSlot()
     def download_done(self):
         """Manage stuff  when download is stopped or complete."""
         if self.dlthread.isRunning():
-            self.downloader.exiting = True
-            self.lineEdit.setText('Download aborted!')
+            self.dlproc.exiting = True
             self.dlthread.quit()
             self.dlthread.wait()
-            os.remove(self.downloader.video_title)
+            os.remove(self.dlproc.video_title)
 
         # update interface
-        self.progressBar.hide()
-        self.abortButton.hide()
-        self.lineEdit.clear()
         self.videoList.setEnabled(True)
+        self.dw.close()
 
     def closeEvent(self, event):
         """Executed when main thread is closed."""

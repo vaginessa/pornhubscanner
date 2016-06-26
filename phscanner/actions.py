@@ -1,11 +1,11 @@
 """
-This module contains the DownloadThread class which creates the thread
+This module contains the Download class which creates the thread
 used to manage the download of the selected video without hanging the
 main interface.
 """
 
 import urllib.request
-from PyQt4.QtCore import pyqtSignal, QObject, pyqtSlot
+from PyQt4.QtCore import pyqtSignal, QObject
 
 
 class Download(QObject):
@@ -17,7 +17,7 @@ class Download(QObject):
         reportInfo: carries an int and is emitted on download progress
         finished: emitted when download is finished.
     """
-    reportInfo = pyqtSignal(int)
+    report = pyqtSignal(int)
     finished = pyqtSignal()
 
     def __init__(self, video_url, video_title):
@@ -34,11 +34,10 @@ class Download(QObject):
         readsofar = blocknum * blocksize
         if totalsize > 0:
             percentage = readsofar * 100 / totalsize
-            self.reportInfo.emit(percentage)
+            self.report.emit(percentage)
 
-    @pyqtSlot()
     def start_process(self):
-        """Entry point and slot for the object, manages the download."""
+        """Entry point for the object, manages the download."""
         block_size = 4096
         written_data = 0
         blocks_counter = 0
