@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'qt-resources/error.ui'
+# Form implementation generated from reading ui file '/home/egx/git/phs/qt-resources/error.ui'
 #
 # Created by: PyQt4 UI code generator 4.11.4
 #
@@ -25,20 +25,32 @@ except AttributeError:
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName(_fromUtf8("Dialog"))
-        Dialog.resize(329, 121)
+        Dialog.resize(300, 120)
         self.gridLayout = QtGui.QGridLayout(Dialog)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
-        self.label = QtGui.QLabel(Dialog)
-        self.label.setText(_fromUtf8(""))
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.label.setObjectName(_fromUtf8("label"))
-        self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
+        self.stopLabel = QtGui.QLabel(Dialog)
+        self.stopLabel.setText(_fromUtf8(""))
+        self.stopLabel.setTextFormat(QtCore.Qt.RichText)
+        self.stopLabel.setPixmap(QtGui.QPixmap(_fromUtf8(":/icons/action-unavailable-symbolic.symbolic.png")))
+        self.stopLabel.setScaledContents(False)
+        self.stopLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.stopLabel.setObjectName(_fromUtf8("stopLabel"))
+        self.gridLayout.addWidget(self.stopLabel, 0, 0, 1, 1)
+        self.errorLabel = QtGui.QLabel(Dialog)
+        self.errorLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.errorLabel.setObjectName(_fromUtf8("errorLabel"))
+        self.gridLayout.addWidget(self.errorLabel, 1, 0, 1, 1)
         self.buttonBox = QtGui.QDialogButtonBox(Dialog)
+        self.buttonBox.setMinimumSize(QtCore.QSize(0, 30))
+        self.buttonBox.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.buttonBox.setStyleSheet(_fromUtf8("QDialogButtonBox {\n"
+"dialogbuttonbox-buttons-have-icons: 0;\n"
+"}"))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Ok)
         self.buttonBox.setCenterButtons(True)
         self.buttonBox.setObjectName(_fromUtf8("buttonBox"))
-        self.gridLayout.addWidget(self.buttonBox, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.buttonBox, 2, 0, 1, 1)
 
         self.retranslateUi(Dialog)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("accepted()")), Dialog.accept)
@@ -47,4 +59,6 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         Dialog.setWindowTitle(_translate("Dialog", "PornHubScanner - Error!", None))
+        self.errorLabel.setText(_translate("Dialog", "TextLabel", None))
 
+from . import icons_rc

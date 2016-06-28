@@ -52,7 +52,7 @@
       <item>
        <widget class="QLabel" name="pageLabel">
         <property name="text">
-         <string>Page to scan:</string>
+         <string>Page:</string>
         </property>
        </widget>
       </item>
@@ -90,36 +90,54 @@
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="actionBox">
+       <widget class="QPushButton" name="scanButton">
         <property name="minimumSize">
          <size>
-          <width>170</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
-        <property name="font">
-         <font>
-          <pointsize>9</pointsize>
-         </font>
+        <property name="text">
+         <string>Scan</string>
         </property>
-        <item>
-         <property name="text">
-          <string>Play mode</string>
-         </property>
-         <property name="icon">
-          <iconset resource="icons.qrc">
-           <normaloff>:/icons/play.svg</normaloff>:/icons/play.svg</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Download mode</string>
-         </property>
-         <property name="icon">
-          <iconset resource="icons.qrc">
-           <normaloff>:/icons/download.svg</normaloff>:/icons/download.svg</iconset>
-         </property>
-        </item>
+        <property name="autoDefault">
+         <bool>true</bool>
+        </property>
+        <property name="default">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="2" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QPushButton" name="playButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Play</string>
+        </property>
+        <property name="icon">
+         <iconset resource="icons.qrc">
+          <normaloff>:/icons/play.svg</normaloff>:/icons/play.svg</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="downloadButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Download</string>
+        </property>
+        <property name="icon">
+         <iconset resource="icons.qrc">
+          <normaloff>:/icons/download.svg</normaloff>:/icons/download.svg</iconset>
+        </property>
        </widget>
       </item>
      </layout>
@@ -146,32 +164,6 @@ QListView::item {
       </property>
      </widget>
     </item>
-    <item row="2" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <widget class="QPushButton" name="scanButton">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Scan</string>
-        </property>
-        <property name="autoDefault">
-         <bool>true</bool>
-        </property>
-        <property name="default">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="3" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout_2"/>
-    </item>
    </layout>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -192,8 +184,8 @@ QListView::item {
    <slot>clear()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>611</x>
-     <y>434</y>
+     <x>775</x>
+     <y>49</y>
     </hint>
     <hint type="destinationlabel">
      <x>496</x>

@@ -25,7 +25,7 @@ except AttributeError:
 class Ui_Download(object):
     def setupUi(self, Download):
         Download.setObjectName(_fromUtf8("Download"))
-        Download.resize(475, 71)
+        Download.resize(480, 70)
         self.gridLayout = QtGui.QGridLayout(Download)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.progressBar = QtGui.QProgressBar(Download)

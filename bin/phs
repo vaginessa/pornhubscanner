@@ -1,157 +1,162 @@
 #!/usr/bin/env python3
-"""
-PornHubScanner is a small program made to  let you watch porn videos
-in a safe and privacy friendly manner. No more cookies, no more
-embarassing browser cache problems, plus no need for flashplayer. The
-script relies on qt4 for the gui and on BeautifulSoup library for the
-page scraping.
-"""
 
 import os
+import subprocess as sp
 import sys
 import urllib.request
-import subprocess
 
 from PyQt4 import QtGui
 from PyQt4.QtCore import QThread
 
-from phscanner.interfaces import error_dialog, downloader, main
-from phscanner.site import PornHub
-from phscanner.actions import Download
+import phscanner.actions
+from phscanner.interfaces import downloader, main, error
+from phscanner.site import PHub
 
 
-def get_coordinates(width, height):
-    """Provides the x and y coordinates to center the widget."""
-    desk = QtGui.QApplication.desktop()
-    return (desk.width() - width) / 2, (desk.height() - height) / 2
+class DownloadWidget(QtGui.QWidget, downloader.Ui_Download):
+    """Manage the behaviour of the widget used for downloads."""
 
-
-class DialogWindow(QtGui.QDialog, error_dialog.Ui_Dialog):
-    """Class to manage popup dialog."""
-    def __init__(self, message):
-        super().__init__()
-        self.setupUi(self)
-        self.label.setText(message)
-        x, y = get_coordinates(self.width(), self.height())
-        self.setGeometry(x, y, self.width(), self.height())
-
-
-class DownloaderWindow(QtGui.QWidget, downloader.Ui_Download):
-    """Class to manage the downloader window."""
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        x, y = get_coordinates(self.width(), self.height())
-        self.setGeometry(x, y, self.width(), self.height())
 
-    def update_progress(self, percentage):
-        """Update progressbar with the received value."""
-        self.progressBar.setValue(percentage)
+    def update_progressbar(self, value):
+        self.progressBar.setValue(value)
 
     def closeEvent(self, event):
-        # If windows is closed, simulate a click of the abortButton.
+        # If widget is closed we abort the download by simulating a
+        # click event of the abortButton
         self.abortButton.click()
 
 
+class PopupDialog(QtGui.QDialog, error.Ui_Dialog):
+    """Manage the behaviour of the dialog widget."""
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+
 class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
-    """Class to manage the behaviour of the main window."""
+    """Manage the behaviour of the main window."""
+
     def __init__(self, parent=None):
         super().__init__()
         self.setupUi(self)
-        self.site = PornHub()
+        self.site = PHub()
+        self.popup = PopupDialog()
+
+        # These values are initialized with empty values here only for
+        # readability, their true use and values are set later
         self.catalogue = {}
         self.dlthread = None
-        self.downloader = None
+        self.dlproc = None
 
-        # Center the window
-        x, y = get_coordinates(self.width(), self.height())
-        self.setGeometry(x, y, self.width(), self.height())
-
-        # Connect signals to methods
+        # Signal to method connections
         self.scanButton.clicked.connect(self.scan)
-        self.videoList.itemDoubleClicked.connect(self.action)
+        self.playButton.clicked.connect(self.play)
+        self.videoList.itemDoubleClicked.connect(self.play)
+        self.downloadButton.clicked.connect(self.download)
 
     def scan(self):
-        """Store titles and addresses in a key-value format."""
+        """
+        Return a dictionary in which each key is a title and its value
+        is the address of the page containing the direct video url.
+        """
         self.catalogue.clear()
         self.site.page = self.pageBox.value()
-
         try:
             self.catalogue = self.site.get_catalogue()
+
         except (urllib.error.HTTPError, urllib.error.URLError):
-            self.lineEdit.setText('Cannot reach the given page!, sorry!')
+            print('Cannot reach the given page!')
+
         else:
             self.videoList.addItems(list(self.catalogue.keys()))
+            self.playButton.setEnabled(True)
+            self.downloadButton.setEnabled(True)
+            print('Page scanned succesfully!')
 
-    def action(self, selected_item):
-        """Manage the selected action for the video."""
-        selected = selected_item.text()
+    def get_url(self):
+        """Return the video title and its direct url. The function
+        attempts 10 times to get a valid url, if it fails an URLError
+        exception will be raised."""
+        item = self.videoList.currentItem().text()
+        attempts = 0
+        while attempts < 10:
+            try:
+                url = self.site.get_video_url(self.catalogue[item])
+                with urllib.request.urlopen(url) as request:
+                    assert request.code == 200
 
-        try:
-            url = self.site.get_video_url(self.catalogue[selected])
-        except (urllib.error.HTTPError, urllib.error.URLError):
-            print('Cannot reach video page, sorry!')
-        except (AttributeError, KeyError):
-            print('Cannot retrieve video url, sorry!')
-        else:
-            if self.actionBox.currentText() == 'Play mode':
-                players = ['/usr/bin/vlc', '/usr/bin/totem']
-                for i in players:
-                    try:
-                        subprocess.Popen([i, url])
-                    except FileNotFoundError:
-                        if i == players[-1]:
-                            msg = 'Cannot find a supported player!'
-                            self.d = DialogWindow(msg)
-                            self.d.show()
-                            break
-                    except TypeError:
-                        pass
-                    else:
-                        break
+            except (urllib.error.HTTPError, urllib.error.URLError):
+                attempts += 1
+                print("Can't reach page, retrying ... {0}".format(attempts))
+                continue
+
+            except AssertionError:
+                attempts += 1
+                print("Got an invalid url, retrying ... {0}".format(attempts))
+                continue
+
             else:
-                # Selected action is 'Download'. We create a separate
-                # QThread instance and a downloader instance, than we
-                # move the latter to the first
-                self.dlthread = QThread()
-                self.dlproc = Download(url, selected)
-                self.dlproc.moveToThread(self.dlthread)
+                return item, url
 
-                # connect signals
-                self.dlthread.started.connect(self.dlproc.start_process)
-                self.dlthread.finished.connect(self.download_done)
-                self.dlproc.finished.connect(self.dlthread.quit)
+        msg = 'All attempts to get a valid url failed. Giving up ... '
+        raise urllib.error.URLError(msg)
 
-                # Create and manage an instance of the DownloaderWindow
-                self.dw = DownloaderWindow()
-                self.dlproc.report.connect(self.dw.update_progress)
-                self.dw.abortButton.clicked.connect(self.download_done)
+    def play(self):
+        """Open the video url in the vlc media player. If vlc is not
+        installed or is not in PATH, an exception will be raised, and
+        the user will be notified with a popup window"""
+        try:
+            sp.Popen(['vlc', '--play-and-exit', self.get_url()[1]])
 
-                # Disable the video list while an action is performing
-                self.videoList.setDisabled(True)
+        except FileNotFoundError:
+            print('vlc not installed')
+            self.popup.errorLabel.setText('Vlc is not installed!')
+            self.popup.show()
 
-                # Start the job
-                try:
-                    self.dlthread.start()
-                except:
-                    print('ff')
-                else:
-                    self.dw.show()
+    def download(self):
+        """Manages the download of the selected video. The download
+        process will be launched in a separated thread so it won't block
+        the main interface."""
+        title, url = self.get_url()
+        self.dlthread = QThread()
+        self.dlproc = phscanner.actions.DownloadProcess(url, title)
+        self.dlproc.moveToThread(self.dlthread)
+
+        # Connect thread and process signals
+        self.dlthread.started.connect(self.dlproc.start_process)
+        self.dlproc.finished.connect(self.dlthread.quit)
+        self.dlthread.finished.connect(self.download_done)
+
+        # Initialize Downloader widget
+        self.dw = DownloadWidget()
+        self.dlproc.report.connect(self.dw.update_progressbar)
+        self.dw.abortButton.clicked.connect(self.download_done)
+        self.dw.show()
+
+        self.videoList.setDisabled(True)
+        self.dlthread.start()
 
     def download_done(self):
-        """Manage stuff  when download is stopped or complete."""
+        """Manage the end of the interruption of the download process.
+        If the process is interrupted, the partially downloaded file
+        will be deleted."""
         if self.dlthread.isRunning():
             self.dlproc.exiting = True
             self.dlthread.quit()
             self.dlthread.wait()
-            os.remove(self.dlproc.video_title)
+            try:
+                os.remove(self.dlproc.title)
 
-        # update interface
+            except OSError as error:
+                print(error.strerror)
+
         self.videoList.setEnabled(True)
         self.dw.close()
 
     def closeEvent(self, event):
-        """Executed when main thread is closed."""
         if self.dlthread:
             self.download_done()
 
@@ -160,7 +165,7 @@ def main():
     app = QtGui.QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    app.exec_()
+    sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()
