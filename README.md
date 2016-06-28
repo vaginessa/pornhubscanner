@@ -1,6 +1,6 @@
-# pscanner
+# Phs (PornHubScanner)
 
-This is a simple python program to watch certain videos on pornhub.com in a
+This is a simple python program to watch videos on pornhub.com in a
 safely manner. All the program does is parse a given page of the site mentioned
 above and retrieve the available videos for you to play or download them.
 
@@ -27,6 +27,4 @@ completely eliminates the need for flashplayer.
 Simply run 
 
     $ python3 setup.py install --user
-
-
 
