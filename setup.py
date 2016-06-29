@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(
-    name='pscanner',
+    name='phs',
     version='1.0',
     description='Watch stuff safely',
     url='https://github.com/egdoc/phs',
