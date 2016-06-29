@@ -45,7 +45,7 @@ class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
         self.site = PHub()
         self.popup = PopupDialog()
 
-        # These values are initialized with empty values here only for
+        # These are initialized with empty values here only for
         # readability, their true use and values are set later
         self.catalogue = {}
         self.dlthread = None
