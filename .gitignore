@@ -1,4 +1,13 @@
-pscanner.egg-info
-**/__pycache__
-**/*.pyc
+*~
+.\#*
+\#*#
 
+*.py[co]
+__pycache__/
+/*.egg
+/*.egg-info/
+/*.egg-link
+/build/
+/dist/
+/*.patch
+/MANIFEST
