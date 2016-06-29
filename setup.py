@@ -6,11 +6,11 @@ setup(
     name='pscanner',
     version='1.0',
     description='Watch stuff safely',
-    url='https://github.com/egdoc/pscanner',
+    url='https://github.com/egdoc/phs',
     author='Egidio Docile',
     author_email='egidio.docile@gmail.com',
     license='GPL2',
     packages=['phscanner'],
-    scripts=['bin/phs'],
+    scripts=['bin/phs.py'],
     install_requires=['BeautifulSoup4']
 )
