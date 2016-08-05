@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import platform
 import subprocess as sp
 import sys
 import urllib.request
@@ -108,8 +109,13 @@ class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
         """Open the video url in the vlc media player. If vlc is not
         installed or is not in PATH, an exception will be raised, and
         the user will be notified with a popup window"""
+        if platform.system() == 'Linux':
+            vlc = '/usr/bin/vlc'
+        elif platform.system() == 'Windows':
+            vlc = ''
+
         try:
-            sp.Popen(['vlc', '--play-and-exit', self.get_url()[1]])
+            sp.Popen([vlc, '--play-and-exit', self.get_url()[1]])
 
         except FileNotFoundError:
             print('vlc not installed')
