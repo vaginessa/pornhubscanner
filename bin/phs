@@ -9,9 +9,9 @@ import urllib.request
 from PyQt4 import QtGui
 from PyQt4.QtCore import QThread
 
-import phscanner.actions
+import phscanner.download
 from phscanner.interfaces import downloader, main, popup
-from phscanner.site import PHub
+from phscanner.site import PornHub
 
 
 class DownloadWidget(QtGui.QWidget, downloader.Ui_Download):
@@ -43,7 +43,7 @@ class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__()
         self.setupUi(self)
-        self.site = PHub()
+        self.site = PornHub()
         self.popup = PopupDialog()
 
         # These are initialized with empty values here only for
@@ -78,9 +78,11 @@ class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
             print('Page scanned succesfully!')
 
     def get_url(self):
-        """Return the video title and its direct url. The function
-        attempts 10 times to get a valid url, if it fails an URLError
-        exception will be raised."""
+        """
+        Return the video title and its direct url. The function attempts
+        10 times to get a valid url, if it fails an URLError exception
+        will be raised.
+        """
         item = self.videoList.currentItem().text()
         attempts = 0
         while attempts < 10:
@@ -106,9 +108,11 @@ class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
         raise urllib.error.URLError(msg)
 
     def play(self):
-        """Open the video url in the vlc media player. If vlc is not
+        """
+        Open the video url in the vlc media player. If vlc is not
         installed or is not in PATH, an exception will be raised, and
-        the user will be notified with a popup window"""
+        the user will be notified with a popup window
+        """
         if platform.system() == 'Linux':
             vlc = '/usr/bin/vlc'
         elif platform.system() == 'Windows':
@@ -123,12 +127,14 @@ class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
             self.popup.show()
 
     def download(self):
-        """Manages the download of the selected video. The download
-        process will be launched in a separated thread so it won't block
-        the main interface."""
+        """
+        Manages the download of the selected video. The download process
+        will be launched in a separated thread so it won't block the
+        main interface.
+        """
         title, url = self.get_url()
         self.dlthread = QThread()
-        self.dlproc = phscanner.actions.DownloadProcess(url, title)
+        self.dlproc = phscanner.download.DownloadProcess(url, title)
         self.dlproc.moveToThread(self.dlthread)
 
         # Connect thread and process signals
@@ -146,9 +152,11 @@ class MainWindow(QtGui.QMainWindow, main.Ui_MainWindow):
         self.dlthread.start()
 
     def download_done(self):
-        """Manage the end of the interruption of the download process.
-        If the process is interrupted, the partially downloaded file
-        will be deleted."""
+        """
+        Manage the end of the interruption of the download process.  If
+        the process is interrupted, the partially downloaded file will
+        be deleted.
+        """
         if self.dlthread.isRunning():
             self.dlproc.exiting = True
             self.dlthread.quit()
